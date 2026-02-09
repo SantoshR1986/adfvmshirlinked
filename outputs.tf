@@ -61,14 +61,19 @@ output "sql_database_name" {
   value       = module.azure_sql.database_name
 }
 
-output "shir_vm_name" {
-  description = "Name of the Self-Hosted Integration Runtime VM."
-  value       = module.shir_vm.vm_name
+output "shir_vm_names" {
+  description = "List of SHIR VM names (one per node)."
+  value       = module.shir_vm.vm_names
 }
 
-output "shir_vm_private_ip" {
-  description = "Private IP address of the SHIR VM."
-  value       = module.shir_vm.private_ip_address
+output "shir_vm_private_ips" {
+  description = "List of private IPs of the SHIR VM nodes."
+  value       = module.shir_vm.private_ip_addresses
+}
+
+output "shir_node_count" {
+  description = "Number of SHIR nodes deployed."
+  value       = module.shir_vm.node_count
 }
 
 output "shir_integration_runtime_name" {
@@ -120,10 +125,10 @@ output "resource_relationship_map" {
       }
       integration_runtimes = {
         self_hosted = {
-          name          = module.data_factory.shir_integration_runtime_name
-          host_vm       = module.shir_vm.vm_name
-          host_vm_ip    = module.shir_vm.private_ip_address
-          auth_key_in   = "${module.key_vault.key_vault_name}/secrets/shir-auth-key"
+          name        = module.data_factory.shir_integration_runtime_name
+          node_count  = module.shir_vm.node_count
+          nodes       = module.shir_vm.nodes
+          auth_key_in = "${module.key_vault.key_vault_name}/secrets/shir-auth-key"
         }
       }
       linked_services = {
@@ -174,7 +179,7 @@ output "resource_relationship_map" {
       ]
       consumed_by = {
         data_factory_linked_service = module.linked_services.linked_service_keyvault_name
-        shir_vm_password            = module.shir_vm.vm_name
+        shir_vm_password            = module.shir_vm.vm_names
       }
       private_endpoint = {
         name             = "pe-kv-${local.name_prefix}"
@@ -218,13 +223,14 @@ output "resource_relationship_map" {
       }
     }
 
-    shir_vm = {
-      vm_name         = module.shir_vm.vm_name
-      private_ip      = module.shir_vm.private_ip_address
-      subnet          = local.shir_subnet_name
-      registered_to   = module.data_factory.shir_integration_runtime_name
-      connects_to     = ["on-prem Oracle via ls-oracle-onprem"]
-      credentials_in  = "${module.key_vault.key_vault_name}/secrets/shir-vm-admin-password"
+    shir_nodes = {
+      node_count     = module.shir_vm.node_count
+      nodes          = module.shir_vm.nodes
+      subnet         = local.shir_subnet_name
+      registered_to  = module.data_factory.shir_integration_runtime_name
+      connects_to    = ["on-prem Oracle via ls-oracle-onprem"]
+      credentials_in = "${module.key_vault.key_vault_name}/secrets/shir-vm-admin-password"
+      ha_enabled     = module.shir_vm.node_count >= 2
     }
 
     networking = {
@@ -249,7 +255,7 @@ output "data_flow_paths" {
   value = {
     blob_pipeline   = "ADF (${module.data_factory.data_factory_name}) → [managed identity] → PE (pe-blob) → Storage (${module.storage_account.storage_account_name})"
     sql_pipeline    = "ADF (${module.data_factory.data_factory_name}) → [managed identity] → PE (pe-sql) → SQL Server (${module.azure_sql.sql_server_name}/${module.azure_sql.database_name})"
-    oracle_pipeline = "ADF (${module.data_factory.data_factory_name}) → SHIR (${module.data_factory.shir_integration_runtime_name}) → VM (${module.shir_vm.vm_name} @ ${module.shir_vm.private_ip_address}) → on-prem Oracle [secret from ${module.key_vault.key_vault_name}]"
+    oracle_pipeline = "ADF (${module.data_factory.data_factory_name}) → SHIR (${module.data_factory.shir_integration_runtime_name}) → ${module.shir_vm.node_count} VM node(s) [${join(", ", module.shir_vm.private_ip_addresses)}] → on-prem Oracle [secret from ${module.key_vault.key_vault_name}]"
     secret_access   = "ADF (${module.data_factory.data_factory_name}) → [managed identity] → PE (pe-kv) → Key Vault (${module.key_vault.key_vault_name})"
   }
 }

@@ -89,6 +89,12 @@ variable "key_vault_admin_object_ids" {
 # -----------------------------------------------------------------------------
 # SHIR VM
 # -----------------------------------------------------------------------------
+variable "shir_vm_node_count" {
+  description = "Number of SHIR VM nodes (1-4). Use 2+ for HA in staging/prod."
+  type        = number
+  default     = 1
+}
+
 variable "shir_vm_size" {
   description = "Azure VM size for the self-hosted integration runtime host."
   type        = string

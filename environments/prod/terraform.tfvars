@@ -34,6 +34,7 @@ key_vault_sku              = "standard"
 key_vault_admin_object_ids = [] # TODO: add Azure AD object IDs
 
 # SHIR VM
+shir_vm_node_count     = 2                     # HA: 2 nodes for prod (up to 4)
 shir_vm_size           = "Standard_D4s_v5"
 shir_vm_admin_username = "azureadmin"
 

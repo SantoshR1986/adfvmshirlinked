@@ -13,6 +13,16 @@ variable "name_prefix" {
   type        = string
 }
 
+variable "node_count" {
+  description = "Number of SHIR VM nodes. All register with the same auth key. Use 2+ for HA."
+  type        = number
+  default     = 1
+  validation {
+    condition     = var.node_count >= 1 && var.node_count <= 4
+    error_message = "Azure supports 1 to 4 nodes per self-hosted integration runtime."
+  }
+}
+
 variable "vm_size" {
   description = "VM SKU size."
   type        = string

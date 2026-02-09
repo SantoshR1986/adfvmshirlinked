@@ -1,13 +1,16 @@
 # =============================================================================
-# Self-Hosted Integration Runtime VM
+# Self-Hosted Integration Runtime VM Nodes
 # Uses company-standard Windows VM module (replace source with your registry).
+# All nodes register with the same SHIR auth key – ADF load-balances across them.
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# NIC for the SHIR VM (placed in the SHIR subnet, no public IP)
+# NIC per node (placed in the SHIR subnet, no public IP)
 # -----------------------------------------------------------------------------
 resource "azurerm_network_interface" "shir" {
-  name                = "nic-shir-${var.name_prefix}"
+  count = var.node_count
+
+  name                = "nic-shir-${var.name_prefix}-${format("%02d", count.index + 1)}"
   location            = var.location
   resource_group_name = var.resource_group_name
 
@@ -21,7 +24,7 @@ resource "azurerm_network_interface" "shir" {
 }
 
 # -----------------------------------------------------------------------------
-# Company-standard Windows VM module
+# Company-standard Windows VM module – one instance per node
 # TODO: Replace the source below with your company's private module registry.
 #       e.g. "app.terraform.io/my-company/windows-vm/azurerm"
 #       or   "my-company.jfrog.io/terraform/windows-vm/azurerm"
@@ -31,8 +34,9 @@ resource "azurerm_network_interface" "shir" {
 module "shir_vm" {
   source = "app.terraform.io/<YOUR_COMPANY>/windows-vm/azurerm" # <-- REPLACE
   # version = "~> x.x"                                           # <-- PIN VERSION
+  count = var.node_count
 
-  name                = "vm-shir-${var.name_prefix}"
+  name                = "vm-shir-${var.name_prefix}-${format("%02d", count.index + 1)}"
   resource_group_name = var.resource_group_name
   location            = var.location
 
@@ -40,7 +44,7 @@ module "shir_vm" {
   admin_username = var.admin_username
   admin_password = var.admin_password
 
-  network_interface_ids = [azurerm_network_interface.shir.id]
+  network_interface_ids = [azurerm_network_interface.shir[count.index].id]
 
   os_disk = {
     caching              = "ReadWrite"
@@ -59,13 +63,15 @@ module "shir_vm" {
 }
 
 # -----------------------------------------------------------------------------
-# Custom Script Extension – installs & registers the SHIR agent
-# The script downloads the latest SHIR MSI from Microsoft, installs it
-# silently, and registers it using the auth key from ADF.
+# Custom Script Extension – installs & registers the SHIR agent on each node
+# All nodes register with the same auth key; ADF auto-discovers them as
+# additional nodes of the same SHIR and load-balances across them.
 # -----------------------------------------------------------------------------
 resource "azurerm_virtual_machine_extension" "install_shir" {
+  count = var.node_count
+
   name                       = "install-shir"
-  virtual_machine_id         = module.shir_vm.vm_id # adjust attribute name
+  virtual_machine_id         = module.shir_vm[count.index].vm_id # adjust attribute name
   publisher                  = "Microsoft.Compute"
   type                       = "CustomScriptExtension"
   type_handler_version       = "1.10"

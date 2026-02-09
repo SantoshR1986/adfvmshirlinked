@@ -108,6 +108,7 @@ module "shir_vm" {
   resource_group_name = azurerm_resource_group.this.name
   location            = var.location
   name_prefix         = local.name_prefix
+  node_count          = var.shir_vm_node_count
   vm_size             = var.shir_vm_size
   admin_username      = var.shir_vm_admin_username
   admin_password      = var.shir_vm_admin_password
