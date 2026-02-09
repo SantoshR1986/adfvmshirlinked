@@ -116,7 +116,6 @@ output "resource_relationship_map" {
         principal_id = module.data_factory.identity_principal_id
         rbac_roles = {
           storage_blob_data_contributor = module.storage_account.storage_account_id
-          sql_server_contributor        = module.azure_sql.sql_server_id
         }
       }
       integration_runtimes = {
@@ -209,7 +208,8 @@ output "resource_relationship_map" {
       accessed_by = {
         adf_linked_service = module.linked_services.linked_service_sql_name
         adf_identity       = module.data_factory.identity_principal_id
-        rbac_role          = "Contributor"
+        auth_method        = "database-level (CREATE USER FROM EXTERNAL PROVIDER)"
+        required_db_roles  = "db_datareader, db_datawriter (grant only what pipelines need)"
       }
       private_endpoint = {
         name             = "pe-sql-${local.name_prefix}"
@@ -268,8 +268,9 @@ output "security_summary" {
     }
     adf_to_sql = {
       auth_method     = "System-Assigned Managed Identity"
-      rbac_role       = "Contributor (+ CREATE USER FROM EXTERNAL PROVIDER in DB)"
-      scope           = module.azure_sql.sql_server_id
+      azure_rbac_role = "none (not needed for data plane access)"
+      db_level_access = "CREATE USER [adf-name] FROM EXTERNAL PROVIDER + db_datareader/db_datawriter"
+      scope           = module.azure_sql.database_id
       network_path    = "Private Endpoint → privatelink.database.windows.net"
     }
     adf_to_keyvault = {

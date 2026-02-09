@@ -94,7 +94,6 @@ module "azure_sql" {
   database_sku           = var.sql_database_sku
   database_max_size_gb   = var.sql_database_max_size_gb
   database_zone_redundant = var.sql_database_zone_redundant
-  adf_identity_principal_id = module.data_factory.identity_principal_id
   tags                   = local.common_tags
 
   depends_on = [module.data_factory, module.networking]

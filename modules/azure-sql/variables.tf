@@ -79,12 +79,6 @@ variable "ltr_monthly_retention" {
   default     = "P12M"
 }
 
-# ADF identity
-variable "adf_identity_principal_id" {
-  description = "Principal ID of the ADF system-assigned managed identity for RBAC."
-  type        = string
-}
-
 variable "tags" {
   description = "Resource tags."
   type        = map(string)

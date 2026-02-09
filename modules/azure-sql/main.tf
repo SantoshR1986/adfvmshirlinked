@@ -53,12 +53,13 @@ resource "azurerm_mssql_database" "this" {
 }
 
 # =============================================================================
-# Role Assignment – ADF Managed Identity → SQL Server Contributor
-# This allows ADF to connect via managed identity. You must also run
-# CREATE USER [adf-name] FROM EXTERNAL PROVIDER; in the database.
+# NOTE: ADF does NOT need any Azure RBAC role on the SQL Server for data access.
+# ADF authenticates via its managed identity at the database level.
+# After deployment, run the following T-SQL as the Azure AD admin:
+#
+#   CREATE USER [<adf-name>] FROM EXTERNAL PROVIDER;
+#   ALTER ROLE db_datareader ADD MEMBER [<adf-name>];
+#   ALTER ROLE db_datawriter ADD MEMBER [<adf-name>];
+#
+# Grant only the database roles your pipelines actually need.
 # =============================================================================
-resource "azurerm_role_assignment" "adf_sql_contributor" {
-  scope                = module.sql_server.resource_id
-  role_definition_name = "Contributor"
-  principal_id         = var.adf_identity_principal_id
-}
