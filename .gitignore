@@ -1,0 +1,28 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Sensitive variable files – never commit secrets
+*.auto.tfvars
+# NOTE: terraform.tfvars is committed (non-sensitive values only).
+#       Sensitive values (passwords, connection strings) must come from
+#       TF_VAR_* environment variables or CI/CD pipeline secrets.
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
